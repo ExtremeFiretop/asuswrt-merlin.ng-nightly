@@ -1,0 +1,65 @@
+name: Sync Upstream
+
+permissions: write-all
+
+on: 
+  schedule:
+    - cron: '45 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-upstream-3006:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 3006.102
+          fetch-depth: 0 
+      - name: Set up upstream and sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          if ! git remote | grep -q upstream; then
+            git remote add upstream "https://github.com/RMerl/asuswrt-merlin.ng.git"
+          fi
+          git fetch upstream 3006.102
+          git checkout 3006.102
+          git rebase upstream/3006.102 || git rebase --abort
+          
+          if [ "$(git status --porcelain)" != "" ]; then
+            git commit --allow-empty -m "Sync with upstream [SYNC_UPSTREAM]"
+            git push origin 3006.102
+          else
+            echo "No changes to sync"
+          fi
+
+  sync-upstream-3004:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 3004.388
+          fetch-depth: 0 
+      - name: Set up upstream and sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          if ! git remote | grep -q upstream; then
+            git remote add upstream "https://github.com/RMerl/asuswrt-merlin.ng.git"
+          fi
+          git fetch upstream 3004.388
+          git checkout 3004.388
+          git rebase upstream/3004.388 || git rebase --abort
+          
+          if [ "$(git status --porcelain)" != "" ]; then
+            git commit --allow-empty -m "Sync with upstream [SYNC_UPSTREAM]"
+            git push origin 3004.388
+          else
+            echo "No changes to sync"
+          fi
