@@ -168,7 +168,7 @@ static char *ago(const struct timespec64 *t)
 		offset = pretty_time(buf, sizeof(buf), now - t->tv_sec);
 		strncpy(buf + offset, " ago", sizeof(buf) - offset - 1);
 		offset += 4;
-		snprintf(buf + offset, sizeof(buf) - offset, ". (sec:%llu)", now - t->tv_sec);
+		snprintf(buf + offset, sizeof(buf) - offset, ". (sec:%lu)", now - t->tv_sec);
 	}
 	buf[sizeof(buf) - 1] = '\0';
 
