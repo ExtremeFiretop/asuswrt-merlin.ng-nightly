@@ -1,0 +1,105 @@
+name: Sync Upstream
+
+permissions: write-all
+
+on: 
+  schedule:
+    - cron: '45 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-upstream-3006:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up upstream and sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=3006.102
+          UPSTREAM_REPO=https://github.com/RMerl/asuswrt-merlin.ng.git
+
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          if ! git remote | grep -q upstream; then
+            git remote add upstream $UPSTREAM_REPO
+          fi
+
+          echo "Fetching from upstream..."
+          git fetch upstream
+
+          echo "Fetching latest changes from origin..."
+          git fetch origin
+
+          echo "Checking out branch $BRANCH"
+          git checkout -B $BRANCH origin/$BRANCH
+
+          echo "Resetting to upstream/$BRANCH"
+          git reset --hard upstream/$BRANCH
+
+          echo "Status after reset:"
+          git status
+
+          echo "Creating empty commit to document sync"
+          git commit --allow-empty -m "Sync with upstream [SYNC_UPSTREAM]"
+
+          echo "Force pushing changes to origin..."
+          git push origin $BRANCH --force
+
+      - name: Trigger Build-Images workflow
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: build-images-3006
+
+  sync-upstream-3004:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up upstream and sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=3004.388
+          UPSTREAM_REPO=https://github.com/RMerl/asuswrt-merlin.ng.git
+
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          if ! git remote | grep -q upstream; then
+            git remote add upstream $UPSTREAM_REPO
+          fi
+
+          echo "Fetching from upstream..."
+          git fetch upstream
+
+          echo "Fetching latest changes from origin..."
+          git fetch origin
+
+          echo "Checking out branch $BRANCH"
+          git checkout -B $BRANCH origin/$BRANCH
+
+          echo "Resetting to upstream/$BRANCH"
+          git reset --hard upstream/$BRANCH
+
+          echo "Status after reset:"
+          git status
+
+          echo "Creating empty commit to document sync"
+          git commit --allow-empty -m "Sync with upstream [SYNC_UPSTREAM]"
+
+          echo "Force pushing changes to origin..."
+          git push origin $BRANCH --force
+
+      - name: Trigger Build-Images workflow
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: build-images-3004
