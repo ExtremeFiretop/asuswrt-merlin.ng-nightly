@@ -1,0 +1,209 @@
+name: Build-Images
+run-name: "Building images 3006 🚀"
+on:
+  push:
+    branches:
+      - '3006.102'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [build-images-3006]
+
+permissions:
+  contents: write
+
+jobs:          
+    build-job:
+      name: Build
+      runs-on: ubuntu-latest
+      if: contains(github.event.head_commit.message, '[SYNC_UPSTREAM]') || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
+      strategy:
+        fail-fast: false
+        matrix:
+          cfg:
+            - { model: "gt-be98_pro",   sdk: "src-rt-5.04behnd.4916", ui: "default",  skip: false }
+            - { model: "rt-be96u",   sdk: "src-rt-5.04behnd.4916", ui: "default",  skip: false }
+      container:
+        image: gnuton/asuswrt-merlin-toolchains-docker:latest
+        env:
+          MERLINUPDATE: "y"
+          MODEL: ${{ matrix.cfg.model }}
+          SDK: ${{ matrix.cfg.sdk }}
+          UI: ${{ matrix.cfg.ui }}
+          SKIP_BUILD: ${{ matrix.cfg.skip }}
+          GIT_REPO: "https://github.com/ExtremeFiretop/asuswrt-merlin.ng-nightly.git"
+          PROJECT_DIR: "/project/asuswrt-merlin.ng-nightly"
+          ARTIFACTS_DIR: "/project/artifacts"
+        options: --user root
+        volumes:
+          - /mnt:/project # HACK: Use /mnt partition since bigger than others. This prevents to run out of space
+      outputs:
+        NEXT_VER: ${{ steps.next_version.outputs.NEXT_VER }}
+        NEXT_TAG: ${{ steps.set_version.outputs.NEXT_TAG }}
+      steps:
+        - name: Run debug commands - post
+          run: |
+            cd /
+            echo "--- Disk available ----"
+            df -h
+        - name: Fetch code from specific branch
+          if: matrix.cfg.skip == false
+          run: |
+            cd /project
+            BRANCH="3006.102"
+            echo "Fetching code from branch $BRANCH"
+
+            if git clone --depth 1 --branch "$BRANCH" "$GIT_REPO"; then
+                echo "Code fetched successfully."
+            else
+                echo "Failed to fetch code. Check the repository and settings."
+                exit 1
+            fi
+
+            ls /home/docker
+        - name: Get release version
+          id: next_version
+          run: |
+            BRANCH_NAME="3006.102"
+            NEXT_VER="${BRANCH_NAME##*/}"
+            echo "NEXT_VER=${NEXT_VER}" >> $GITHUB_OUTPUT
+            echo "Build Version is ${NEXT_VER}"
+        - name: "Set version"
+          if: matrix.cfg.skip == false
+          id: set_version
+          env:
+            BASE_VER: ${{ steps.next_version.outputs.NEXT_VER }}
+          run: |
+            # Navigate to the project directory
+            cd ${PROJECT_DIR}
+          
+            # Extract SERIALNO from version.conf
+            SERIALNO=$(grep "^SERIALNO=" release/src-rt/version.conf | cut -d '=' -f 2)
+            EXTENDNO=$(grep "^EXTENDNO=" release/src-rt/version.conf | cut -d '=' -f 2)
+          
+            # Split SERIALNO into MAJOR_VER and MINOR_VER
+            MINOR_VER=$(echo "${SERIALNO}" | cut -d '.' -f 2)
+            EXTENDNO_VER="${EXTENDNO}"
+            NEXT_TAG="v${BASE_VER}.${MINOR_VER}-${EXTENDNO_VER}"
+            echo "BASENO is ${BASE_VER}"
+            echo "MINORNO is ${MINOR_VER}"
+            echo "EXTENDNO is ${EXTENDNO}"
+          
+            # Print the detected version
+            echo "Release detected. Updating Github Environment with BASE_VER=${BASE_VER}, MINOR_VER=${MINOR_VER} and EXTENDNO_VER=${EXTENDNO_VER}"
+            # Set the output for the job
+            echo "NEXT_TAG=${NEXT_TAG}" >> $GITHUB_OUTPUT
+            echo "NEXT_TAG is set to ${NEXT_TAG}"
+        - name: Install gengetopt
+          if: matrix.cfg.skip == false
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y gengetopt
+        - name: Create build script
+          run: |
+            cat << EOF > /tmp/build.sh
+            #!/bin/bash
+            set -e
+            echo "----- Space available -----"
+            df -h
+            echo "----- I am: $(id) -----"
+            echo "----- PROJECT_DIR: ${PROJECT_DIR} -----"
+            echo "----- SDK: ${SDK} -----"
+            echo "----- Changing to project directory -----"
+            cd ${PROJECT_DIR}/release/${SDK}
+            echo "----- Files in dir: $(pwd) -----"
+            ls -alh
+            echo "----- Setting toolchains for ${SDK} -----"
+            if [[ "${SDK}" == "src-rt-5.04axhnd.675x" ]]; then
+              source /home/docker/envs/bcm-hnd-ax-4.19.sh
+            elif [[ "${SDK}" == "src-rt-5.02L.07p2axhnd" ]]; then
+              source /home/docker/envs/bcm-hnd-ax-4.19.sh
+            elif [[ "${SDK}" == "src-rt-5.04behnd.4916" ]]; then
+              source /home/docker/envs/bcm-hnd-ax-4.19be.sh
+            elif [[ "${SDK}" == "src-rt-5.02axhnd.675x" ]]; then
+              source /home/docker/envs/bcm-hnd.sh
+            elif [[ "${SDK}" == "src-rt-5.02axhnd" ]]; then
+              source /home/docker/envs/bcm-hnd.sh
+            else
+              echo "SDK not supported" && exit -1
+            fi
+            echo "----- hack-ish fix ---------"
+            sudo ln -sf /home/docker/am-toolchains/brcm-arm-hnd /opt/toolchains
+            echo "----- Check envs dir ---------"
+            ls -alh /home/docker/envs/
+            echo "----- Debugging env vars -----"
+            env
+            echo "------ Setting UI as ${UI} ---------"
+            if [[ "${UI}" == "rog" ]]; then
+              echo "Enabling ROG UI" && sed -i "s/ROG_UI=n/ROG_UI=y/" ${PROJECT_DIR}/release/src-rt/target.mak
+            fi
+            echo "----- BUILD ${MODEL}-----"
+            make ${MODEL}
+            EOF
+            chmod +x /tmp/build.sh
+        - name: Fix permissions in docker image
+          run: |
+            chown -R docker:docker /github/home /home/docker /project
+            chmod -R 777 /github/home /home/docker /project
+        - name: "Build"
+          if: matrix.cfg.skip == false
+          run: |
+            su - docker -c /tmp/build.sh
+        - name: "Prepare artifacts"
+          if: matrix.cfg.skip == false
+          run: |
+            mkdir -p "${ARTIFACTS_DIR}"
+            export IMAGE_PATH=${PROJECT_DIR}/release/${SDK}/image/
+            echo "Removing images with boot loader."
+            rm -rf ${IMAGE_PATH}/*cferom*
+
+            files=("${IMAGE_PATH}"/*squashfs.pkgtb "${IMAGE_PATH}"/*.w)
+
+            if [ ${#files[@]} -gt 0 ]; then
+                for f in "${files[@]}"; do
+                    if [ -f "$f" ] && [ "${f##*.}" != "md5" ]; then
+                        echo "Creating MD5 signature for $f"
+                        md5sum "$f" > "$f.md5"
+                        echo "Copying image $f to workspace"
+                        cp "$f" "${ARTIFACTS_DIR}"
+                        cp "$f.md5" "${ARTIFACTS_DIR}"
+                    fi
+                done
+            else
+                echo "No *.squashfs.pkgtb or *.w files found in ${IMAGE_PATH}"
+            fi
+        - name: "Archive artifacts"
+          if: matrix.cfg.skip == false
+          uses: actions/upload-artifact@v4
+          with:
+            name: release-${{ matrix.cfg.model }}-${{ matrix.cfg.ui }}
+            path: "/project/artifacts"
+    release-job:
+      name: Publish
+      needs: build-job
+      runs-on: ubuntu-latest
+      steps:
+        - name: Download packages
+          uses: actions/download-artifact@v4
+
+        - name: Generate tag and name
+          id: unique_tag
+          run: |
+            Build_TAG="${{ needs.build-job.outputs.NEXT_TAG }}"
+            UNIQUE_TAG="${Build_TAG}-$(date +%Y%m%d)"
+            echo "Release Tag is: $UNIQUE_TAG"
+            echo "UNIQUE_TAG=$UNIQUE_TAG" >> $GITHUB_ENV
+            RELEASE_NAME="Nightly Release - ${Build_TAG} - $(date +%Y%m%d)"
+            echo "Release Name is: $RELEASE_NAME"
+            echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
+
+        - name: Publish archives and packages
+          uses: softprops/action-gh-release@v2.0.8
+          with:
+            tag_name: ${{ env.UNIQUE_TAG }}
+            name: ${{ env.RELEASE_NAME }}
+            draft: false
+            prerelease: true
+            generate_release_notes: true
+            files: /home/runner/work/asuswrt-merlin.ng-nightly/asuswrt-merlin.ng-nightly/release*/*
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
