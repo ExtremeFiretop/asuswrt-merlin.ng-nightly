@@ -1,19 +1,9 @@
-asuswrt-merlin New Gen (version 382.xx and higher)
+asuswrt-merlin Nightly Builds
 ==================================================
 
-#### Support is available via the forums at [SNBForums](https://www.snbforums.com/forums/asuswrt-merlin.42/).
+#### This Nightly branch is based on Merlin's 3.0.0.4 and 3.0.0.6 firmware release's and is intended solely for testing purposes. 
+#### This firmware is not to be used in a production environment. It is missing production functionalities, including QoS and TrendMicro components, and is intended only to test the latest commits from the upstream repository.
 
-Asuswrt-Merlin is an enhanced version of Asuswrt, the firmware used by Asus's modern routers.
-
-The goal of this project is to fix issues and bring some minor functionality adjustments to the 
-original Asus firmware.  While some features do get added, this is not the main focus of this project.  
-It is not meant to replace existing projects such as Tomato or DD-WRT, but rather to offer an alternative 
-for people who prefer the original firmware featureset.
-
-This is the new development branch, originally based on Asus's 
-3.0.0.4.382_xxxx firmware release.  Development of the 380.xx 
-legacy branch has been dropped.
-
-Please consult the Wiki for an up-to-date list of supported models:
-
-https://github.com/RMerl/asuswrt-merlin.ng/wiki/Supported-Devices
+Please note: This Nightly version is not officially supported firmware. 
+Keep in mind that this branch is for testing the latest developments and help identify any security vulerabilities.
+This branch may be unstable. Use it at your own risk.
