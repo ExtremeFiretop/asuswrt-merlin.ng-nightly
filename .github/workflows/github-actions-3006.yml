@@ -189,10 +189,10 @@ jobs:
           id: unique_tag
           run: |
             Build_TAG="${{ needs.build-job.outputs.NEXT_TAG }}"
-            UNIQUE_TAG="${Build_TAG}-$(date +%Y%m%d)"
+            UNIQUE_TAG="$(date +%Y%m%d)-${Build_TAG}"
             echo "Release Tag is: $UNIQUE_TAG"
             echo "UNIQUE_TAG=$UNIQUE_TAG" >> $GITHUB_ENV
-            RELEASE_NAME="Nightly Release - ${Build_TAG} - $(date +%Y%m%d)"
+            RELEASE_NAME="Nightly Release - $(date +%Y%m%d) - ${Build_TAG}"
             echo "Release Name is: $RELEASE_NAME"
             echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
 
