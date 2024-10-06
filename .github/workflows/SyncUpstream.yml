@@ -35,7 +35,7 @@ jobs:
           echo "Fetching latest changes from origin..."
           git fetch origin
 
-          echo "Comparing upstream/$BRANCH and origin/$BRANCH"
+          echo "Comparing commit hashes of upstream/$BRANCH and origin/$BRANCH"
           UPSTREAM_COMMIT=$(git rev-parse upstream/$BRANCH)
           ORIGIN_COMMIT=$(git rev-parse origin/$BRANCH)
 
@@ -55,14 +55,15 @@ jobs:
           echo "Status after reset:"
           git status
 
-          echo "Creating empty commit to document sync"
-          git commit --allow-empty -m "Sync with upstream [SYNC_UPSTREAM]"
-
           echo "Force pushing changes to origin..."
           git push origin $BRANCH --force
 
+          echo "Creating a lightweight tag to mark the sync point"
+          TAG_NAME="sync-$(date +%Y%m%d%H%M%S)"
+          git tag -a "$TAG_NAME" -m "Synced with upstream on $(date)"
+          git push origin "$TAG_NAME"
+
       - name: Trigger Build-Images workflow
-        if: success()  # Ensure this step runs only if the previous steps were successful
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +96,7 @@ jobs:
           echo "Fetching latest changes from origin..."
           git fetch origin
 
-          echo "Comparing upstream/$BRANCH and origin/$BRANCH"
+          echo "Comparing commit hashes of upstream/$BRANCH and origin/$BRANCH"
           UPSTREAM_COMMIT=$(git rev-parse upstream/$BRANCH)
           ORIGIN_COMMIT=$(git rev-parse origin/$BRANCH)
 
@@ -115,14 +116,15 @@ jobs:
           echo "Status after reset:"
           git status
 
-          echo "Creating empty commit to document sync"
-          git commit --allow-empty -m "Sync with upstream [SYNC_UPSTREAM]"
-
           echo "Force pushing changes to origin..."
           git push origin $BRANCH --force
 
+          echo "Creating a lightweight tag to mark the sync point"
+          TAG_NAME="sync-$(date +%Y%m%d%H%M%S)"
+          git tag -a "$TAG_NAME" -m "Synced with upstream on $(date)"
+          git push origin "$TAG_NAME"
+
       - name: Trigger Build-Images workflow
-        if: success()  # Ensure this step runs only if the previous steps were successful
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
