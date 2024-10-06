@@ -35,6 +35,17 @@ jobs:
           echo "Fetching latest changes from origin..."
           git fetch origin
 
+          echo "Comparing upstream/$BRANCH and origin/$BRANCH"
+          UPSTREAM_COMMIT=$(git rev-parse upstream/$BRANCH)
+          ORIGIN_COMMIT=$(git rev-parse origin/$BRANCH)
+
+          if [ "$UPSTREAM_COMMIT" = "$ORIGIN_COMMIT" ]; then
+            echo "No changes found between upstream/$BRANCH and origin/$BRANCH. Skipping sync."
+            exit 0
+          else
+            echo "Changes found. Proceeding with sync."
+          fi
+
           echo "Checking out branch $BRANCH"
           git checkout -B $BRANCH origin/$BRANCH
 
@@ -51,6 +62,7 @@ jobs:
           git push origin $BRANCH --force
 
       - name: Trigger Build-Images workflow
+        if: success()  # Ensure this step runs only if the previous steps were successful
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -83,6 +95,17 @@ jobs:
           echo "Fetching latest changes from origin..."
           git fetch origin
 
+          echo "Comparing upstream/$BRANCH and origin/$BRANCH"
+          UPSTREAM_COMMIT=$(git rev-parse upstream/$BRANCH)
+          ORIGIN_COMMIT=$(git rev-parse origin/$BRANCH)
+
+          if [ "$UPSTREAM_COMMIT" = "$ORIGIN_COMMIT" ]; then
+            echo "No changes found between upstream/$BRANCH and origin/$BRANCH. Skipping sync."
+            exit 0
+          else
+            echo "Changes found. Proceeding with sync."
+          fi
+
           echo "Checking out branch $BRANCH"
           git checkout -B $BRANCH origin/$BRANCH
 
@@ -99,6 +122,7 @@ jobs:
           git push origin $BRANCH --force
 
       - name: Trigger Build-Images workflow
+        if: success()  # Ensure this step runs only if the previous steps were successful
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
