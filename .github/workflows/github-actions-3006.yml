@@ -21,7 +21,7 @@ jobs:
         matrix:
           cfg:
             - { model: "gt-be98_pro",   sdk: "src-rt-5.04behnd.4916", ui: "default",  skip: false }
-            - { model: "rt-be96u",   sdk: "src-rt-5.04behnd.4916soft", ui: "default",  skip: false }
+            - { model: "rt-be96u",   sdk: "src-rt-5.04axhnd.675x", ui: "default",  skip: false }
       container:
         image: gnuton/asuswrt-merlin-toolchains-docker:latest
         env:
@@ -119,8 +119,6 @@ jobs:
               source /home/docker/envs/bcm-hnd-ax-4.19.sh
             elif [[ "${SDK}" == "src-rt-5.04behnd.4916" ]]; then
               source /home/docker/envs/bcm-hnd-ax-4.19be.sh
-            elif [[ "${SDK}" == "src-rt-5.04behnd.4916soft" ]]; then
-              source /home/docker/envs/bcm-hnd-ax-4.19be_soft.sh
             elif [[ "${SDK}" == "src-rt-5.02axhnd.675x" ]]; then
               source /home/docker/envs/bcm-hnd.sh
             elif [[ "${SDK}" == "src-rt-5.02axhnd" ]]; then
