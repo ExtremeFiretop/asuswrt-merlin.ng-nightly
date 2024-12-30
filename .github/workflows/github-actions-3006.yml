@@ -21,7 +21,7 @@ jobs:
         matrix:
           cfg:
             - { model: "gt-be98_pro",   sdk: "src-rt-5.04behnd.4916", ui: "default",  skip: false }
-            - { model: "rt-be96u",   sdk: "src-rt-5.04behnd.4916", ui: "default",  skip: true }
+            - { model: "rt-be96u",   sdk: "src-rt-5.04behnd.4916", ui: "default",  skip: false }
       container:
         image: gnuton/asuswrt-merlin-toolchains-docker:latest
         env:
